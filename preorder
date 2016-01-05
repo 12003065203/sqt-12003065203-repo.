@@ -1,0 +1,70 @@
+import numpy as np 
+2 from graphviz import Graph 
+3 
+ 
+4 #==== Genreate data ==== 
+5 # nodes = map(str, [2, 4, 5, 6, 7, 8]) 
+6 n = 20 
+7 nodes = np.random.randint(1, 100, n) 
+8 nodes = map(str, sorted(set(nodes))) 
+9 nInf = np.inf 
+10 
+ 
+11 #==== build cost matrix ==== 
+12 n = len(nodes) 
+13 cMtx = [nInf] * (n + 1) # dimension 1x(n+1) 
+14 cMtx = [cMtx] * (n + 1 + 1)   # dimension (n+2)x(n+1) 
+15 
+ 
+16 #==== build root matrix ==== 
+17 cMtx = np.matrix(cMtx) 
+18 rMtx = np.matrix(cMtx) 
+19 
+ 
+20 #==== initial boundary ==== 
+21 for i in xrange(1, n + 2): # 1-6 
+22     cMtx[i, i-1] = 0 
+23 
+ 
+24 #==== filling table (diagonally) ==== 
+25 for l in xrange(1, n + 1): # 1-5 
+26     for i in xrange(1, n - l + 1 + 1): 
+27         j = i + l - 1 
+28         # cMtx[i, j] = nInf 
+29         for r in xrange(i, j + 1): 
+30             tmp = cMtx[i, r-1] + cMtx[r+1, j] + (j - i + 1) 
+31             if tmp < cMtx[i, j]: 
+32                 cMtx[i, j] = tmp 
+33                 rMtx[i, j] = r 
+34 
+ 
+35 #==== See ====                 
+36 print cMtx 
+37 print rMtx 
+38 
+ 
+39 #==== Trace root and build optimal tree ==== 
+40 g = Graph(comment = 'G', filename = '/Users/yunyan/test.gv', engine='sfdp') 
+41 def renderGraph (root, nodes, g): 
+42     if (len(root) != len(nodes) + 2): 
+43         print "Root position matrix is not compatible with nodes" 
+44         return 1 
+45     n = len(nodes) 
+46     r = int(root[1, n]) 
+47     print str(nodes[r-1]) + "node is root" 
+48     g.node(str(nodes[r-1]), color = 'red') 
+49     preorderRend(1, r-1, r, root, nodes, 'left', g) #left 
+50     preorderRend(r+1, n, r, root, nodes, 'right', g) #right 
+51      
+52 def preorderRend(i, j, r, root, nodes, dire, g): 
+53     if i <= j: 
+54         t = int(root[i, j]) 
+55         print str(nodes[t-1]) + "node is " + dire +" child of " + str(nodes[r-1]) + "node" 
+56         g.edge(nodes[r-1], nodes[t-1]) # r-->t #notice 0-based 
+57         preorderRend(i, t-1, t, root, nodes, 'left', g) #left 
+58         preorderRend(t+1, j, t, root, nodes, 'right', g) #right 
+59     else: 
+60         print str(nodes[r-1]) + "node's" + dire + " is empty" 
+61 renderGraph(root = rMtx, nodes = nodes, g = g) 
+62 g.render() 
+63 g.view() 
